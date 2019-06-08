@@ -186,3 +186,82 @@ def findThreshold():
         elif k == 27:
             break
     cv2.destroyAllWindows()
+	
+def find_angles(threshImg,center):
+    start = time.time()
+    threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
+    threshImg  = cv2.flip( threshImg, 0 )
+    thresh_img = threshImg.copy()
+    # define the list of boundaries
+    '''boundaries = [
+         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
+         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
+         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
+         ([0, 178, 0], [255, 181, 232], 'g', (0,255,0))
+    ]'''
+
+    boundaries = [
+         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
+         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
+         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
+         ([0, 181, 0], [255, 183, 42], 'g', (0,255,0))
+    ]
+    masks = []
+    images = []
+    titles = []
+    angles = []
+    # loop over the boundaries
+    for (lower, upper, title, color) in boundaries:
+        # create NumPy arrays from the boundaries
+        lower = np.array(lower, dtype = "uint8")
+        upper = np.array(upper, dtype = "uint8")
+
+        # find the colors within the specified boundaries and apply
+        # the mask
+        mask = cv2.inRange(threshImg, lower, upper)
+        kernel = np.ones((3,3),np.uint8)
+
+        mask = cv2.dilate(mask,kernel,iterations = 6)
+
+        output = cv2.bitwise_and(threshImg, threshImg, mask = mask)
+        gray_image = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
+        gray_image = cv2.GaussianBlur(gray_image,(5,5),1)
+
+
+
+        # find contours in the binary image
+        contours, _ = cv2.findContours(gray_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        c = max(contours, key = cv2.contourArea)
+        temp = c.reshape(c.shape[0],2)
+        closest = closest_node(center, temp)
+        cX, cY = temp[closest]
+        # calculate moments for each contour
+        '''M = cv2.moments(c)
+        # calculate x,y coordinate of center
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])'''
+
+
+        vect1 = findVec(center,(center[0]-200,center[1]))
+        vect2 = findVec(center, (cX ,cY))
+        angle = math.degrees(calcul_angle(vect1,vect2))
+        angles.append(angle)
+        cv2.line(thresh_img,(cX ,cY),center,color, 2)    
+
+        cv2.circle(thresh_img, center, 5, (255, 255, 255), -1)
+        # show the images
+        output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
+        images.append(output)
+        titles.append(title + ", angle: " + str(angle))
+        masks.append(mask)
+
+    cv2.line(thresh_img,(center[0]-200,center[1]),center,(255,255,255), 2)    
+
+    thresh_img = cv2.cvtColor(thresh_img, cv2.COLOR_BGR2RGB)
+    images.append(thresh_img)
+    titles.append('Original')
+    i = 0
+    print("time: ",time.time() - start)
+    print(angles)
+    show_images(images, cols = 3, titles = titles)
+    return angles
