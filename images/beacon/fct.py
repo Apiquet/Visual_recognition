@@ -245,6 +245,87 @@ def find_angles(threshImg,center):
         vect1 = findVec(center,(center[0]-200,center[1]))
         vect2 = findVec(center, (cX ,cY))
         angle = math.degrees(calcul_angle(vect1,vect2))
+        if cY < center[1]:
+            angle = -angle
+        angles.append(angle)
+        cv2.line(thresh_img,(cX ,cY),center,color, 2)    
+
+        cv2.circle(thresh_img, center, 5, (255, 255, 255), -1)
+        # show the images
+        output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
+        images.append(output)
+        titles.append(title + ", angle: " + str(angle))
+        masks.append(mask)
+
+    cv2.line(thresh_img,(center[0]-200,center[1]),center,(255,255,255), 2)    
+
+    thresh_img = cv2.cvtColor(thresh_img, cv2.COLOR_BGR2RGB)
+    images.append(thresh_img)
+    titles.append('Original')
+    i = 0
+    print("time: ",time.time() - start)
+    print(angles)
+    #show_images(images, cols = 3, titles = titles)
+    return angles
+	
+def find_angles_with_display(threshImg,center):
+    start = time.time()
+    threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
+    threshImg  = cv2.flip( threshImg, 0 )
+    thresh_img = threshImg.copy()
+    # define the list of boundaries
+    '''boundaries = [
+         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
+         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
+         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
+         ([0, 178, 0], [255, 181, 232], 'g', (0,255,0))
+    ]'''
+
+    boundaries = [
+         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
+         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
+         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
+         ([0, 181, 0], [255, 183, 42], 'g', (0,255,0))
+    ]
+    masks = []
+    images = []
+    titles = []
+    angles = []
+    # loop over the boundaries
+    for (lower, upper, title, color) in boundaries:
+        # create NumPy arrays from the boundaries
+        lower = np.array(lower, dtype = "uint8")
+        upper = np.array(upper, dtype = "uint8")
+
+        # find the colors within the specified boundaries and apply
+        # the mask
+        mask = cv2.inRange(threshImg, lower, upper)
+        kernel = np.ones((3,3),np.uint8)
+
+        mask = cv2.dilate(mask,kernel,iterations = 6)
+
+        output = cv2.bitwise_and(threshImg, threshImg, mask = mask)
+        gray_image = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
+        gray_image = cv2.GaussianBlur(gray_image,(5,5),1)
+
+
+
+        # find contours in the binary image
+        contours, _ = cv2.findContours(gray_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        c = max(contours, key = cv2.contourArea)
+        temp = c.reshape(c.shape[0],2)
+        closest = closest_node(center, temp)
+        cX, cY = temp[closest]
+        # calculate moments for each contour
+        '''M = cv2.moments(c)
+        # calculate x,y coordinate of center
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])'''
+
+
+        vect1 = findVec(center,(center[0]-200,center[1]))
+        vect2 = findVec(center, (cX ,cY))
+        angle = math.degrees(calcul_angle(vect1,vect2))
         angles.append(angle)
         cv2.line(thresh_img,(cX ,cY),center,color, 2)    
 
@@ -265,3 +346,37 @@ def find_angles(threshImg,center):
     print(angles)
     show_images(images, cols = 3, titles = titles)
     return angles
+
+def find_robot_pos(angles,lights_coordinates):
+    a1,a2,a3 = math.radians(angles[0]),math.radians(angles[1]),math.radians(angles[2])
+    x1,y1 = lights_coordinates[0]
+    x2,y2 = lights_coordinates[1]
+    x3,y3 = lights_coordinates[2]
+    
+    x1_ = x1-x2
+    y1_ = y1-y2
+    x3_ = x3-x2
+    y3_ = y3-y2
+
+    T12 = 1/math.tan(a2-a1)
+    T23 = 1/math.tan(a3-a2)
+    T31 = (1-T12*T23)/(T12+T23)
+
+    x12_ = x1_ + T12*y1_
+    y12_ = y1_ - T12*x1_
+    x23_ = x3_ - T23*y3_
+    y23_ = y3_ + T23*x3_
+    x31_ = (x3_+x1_) + T31*(y3_-y1_)
+    y31_ = (y3_+y1_) - T31*(x3_-x1_)
+
+    k31_ = x1_*x3_ + y1_*y3_ + T31*(x1_*y3_-x3_*y1_)
+
+    D = ((x12_-x23_)*(y23_-y31_))-((y12_-y23_)*(x23_-x31_))
+
+    x = x2 + (k31_*(y12_-y23_))/D
+    y = y2 + (k31_*(x23_-x12_))/D
+    
+    angle = math.atan2(y2 - y , x2 - x)  - a2
+    
+    
+    return x,y,math.degrees(angle)
