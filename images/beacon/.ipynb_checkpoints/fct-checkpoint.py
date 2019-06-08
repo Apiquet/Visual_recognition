@@ -152,7 +152,7 @@ def findThreshold():
     cv2.createTrackbar("vMin", "Colorbars",0,255,nothing)
 
     img = cv2.imread('threshold_img.png') 
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    #img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     #img = cv2.resize(img, (0,0), fx=0.5, fy=0.5)
 
     while(1):
@@ -175,7 +175,7 @@ def findThreshold():
         output = cv2.bitwise_and(img, img, mask = mask)
 
         # cv2.imshow(wnd)
-        output = cv2.cvtColor(output, cv2.COLOR_HSV2BGR)
+        #output = cv2.cvtColor(output, cv2.COLOR_HSV2BGR)
         #cv2.imshow("img",img)
         cv2.imshow("output",output)
 		
@@ -271,7 +271,7 @@ def find_angles(threshImg,center):
 	
 def find_angles_with_display(threshImg,center):
     start = time.time()
-    threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
+    #threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
     threshImg  = cv2.flip( threshImg, 0 )
     thresh_img = threshImg.copy()
     # define the list of boundaries
