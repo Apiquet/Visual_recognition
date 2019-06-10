@@ -12,11 +12,12 @@ import re
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-def findCenter(x1,x2,y1,y2,boundaries,center):
+from termcolor import colored
+
+def findCenter(x1,x2,y1,y2,a1,a2,a3,boundaries,center):
     threshImg = cv2.imread('threshold_img.png') 
 
     start = time.time()
-    threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
     threshImg  = cv2.flip( threshImg, 0 )
     thresh_img = threshImg.copy()
     # define the list of boundaries
@@ -29,7 +30,7 @@ def findCenter(x1,x2,y1,y2,boundaries,center):
     for x in range(x1,x2):
         for y in range(y1,y2):
             angles = []
-            for (lower, upper, title, color) in boundaries:
+            for (lower, upper, title, color,pos) in boundaries:
                 # create NumPy arrays from the boundaries
                 lower = np.array(lower, dtype = "uint8")
                 upper = np.array(upper, dtype = "uint8")
@@ -63,7 +64,7 @@ def findCenter(x1,x2,y1,y2,boundaries,center):
                 vect1 = findVec((x,y),(x-200,y))
                 vect2 = findVec((x,y), (cX ,cY))
                 angles.append(math.degrees(calcul_angle(vect1,vect2)))
-            if angles[0] > 44.9 and angles[0] < 45.1 and angles[1] > 171.8 and angles[1] < 172:
+            if angles[0] > a1-7 and angles[0] < a1+7 and angles[1] > a2-7 and angles[1] < a2+7 and angles[2] > a3-7 and angles[2] < a3+7:
                 print("angles: ", angles)
                 print("found: ",x,y)
                 break
@@ -152,8 +153,9 @@ def findThreshold():
     cv2.createTrackbar("vMin", "Colorbars",0,255,nothing)
 
     img = cv2.imread('threshold_img.png') 
+    
+    img  = cv2.flip( img, 0 )
     #img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    #img = cv2.resize(img, (0,0), fx=0.5, fy=0.5)
 
     while(1):
         hmax=cv2.getTrackbarPos("hmax", "Colorbars")
@@ -186,33 +188,19 @@ def findThreshold():
             break
     cv2.destroyAllWindows()
 	
-def find_angles(threshImg,center):
+def find_angles(threshImg,center,boundaries):
     start = time.time()
-    threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
     #threshImg = cv2.cvtColor(threshImg, cv2.COLOR_BGR2HSV)
 
     threshImg  = cv2.flip( threshImg, 0 )
     thresh_img = threshImg.copy()
-    # define the list of boundaries
-    '''boundaries = [
-         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
-         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
-         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
-         ([0, 178, 0], [255, 181, 232], 'g', (0,255,0))
-    ]'''
-
-    boundaries = [
-         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
-         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
-         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
-         ([0, 181, 0], [255, 183, 42], 'g', (0,255,0))
-    ]
     masks = []
     images = []
     titles = []
     angles = []
+    light_position = []
     # loop over the boundaries
-    for (lower, upper, title, color) in boundaries:
+    for (lower, upper, title, color,pos) in boundaries:
         # create NumPy arrays from the boundaries
         lower = np.array(lower, dtype = "uint8")
         upper = np.array(upper, dtype = "uint8")
@@ -250,6 +238,7 @@ def find_angles(threshImg,center):
             if cY < center[1]:
                 angle = - angle
             angles.append(angle)
+            light_position.append(pos)
             cv2.line(thresh_img,(cX ,cY),center,color, 2)    
 
             cv2.circle(thresh_img, center, 5, (255, 255, 255), -1)
@@ -267,33 +256,19 @@ def find_angles(threshImg,center):
     images.append(thresh_img)
     titles.append('Original')
     i = 0
-    return angles
+    return angles,light_position
 	
-def find_angles_with_display(threshImg,center):
+def find_angles_with_display(threshImg,center,boundaries):
     start = time.time()
-    #threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
     threshImg  = cv2.flip( threshImg, 0 )
     thresh_img = threshImg.copy()
-    # define the list of boundaries
-    '''boundaries = [
-         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
-         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
-         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
-         ([0, 178, 0], [255, 181, 232], 'g', (0,255,0))
-    ]'''
-
-    boundaries = [
-         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
-         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
-         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
-         ([0, 181, 0], [255, 183, 42], 'g', (0,255,0))
-    ]
     masks = []
     images = []
     titles = []
     angles = []
+    light_position = []
     # loop over the boundaries
-    for (lower, upper, title, color) in boundaries:
+    for (lower, upper, title, color, pos) in boundaries:
         # create NumPy arrays from the boundaries
         lower = np.array(lower, dtype = "uint8")
         upper = np.array(upper, dtype = "uint8")
@@ -313,29 +288,35 @@ def find_angles_with_display(threshImg,center):
 
         # find contours in the binary image
         contours, _ = cv2.findContours(gray_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-        c = max(contours, key = cv2.contourArea)
-        temp = c.reshape(c.shape[0],2)
-        closest = closest_node(center, temp)
-        cX, cY = temp[closest]
-        # calculate moments for each contour
-        '''M = cv2.moments(c)
-        # calculate x,y coordinate of center
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])'''
+        try:
+            c = max(contours, key = cv2.contourArea)
+            temp = c.reshape(c.shape[0],2)
+            closest = closest_node(center, temp)
+            cX, cY = temp[closest]
+            # calculate moments for each contour
+            '''M = cv2.moments(c)
+            # calculate x,y coordinate of center
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])'''
 
 
-        vect1 = findVec(center,(center[0]-200,center[1]))
-        vect2 = findVec(center, (cX ,cY))
-        angle = math.degrees(calcul_angle(vect1,vect2))
-        angles.append(angle)
-        cv2.line(thresh_img,(cX ,cY),center,color, 2)    
+            vect1 = findVec(center,(center[0]-200,center[1]))
+            vect2 = findVec(center, (cX ,cY))
+            angle = math.degrees(calcul_angle(vect1,vect2))
+            if cY < center[1]:
+                angle = - angle
+            angles.append(angle)
+            light_position.append(pos)
+            cv2.line(thresh_img,(cX ,cY),center,color, 2)    
 
-        cv2.circle(thresh_img, center, 5, (255, 255, 255), -1)
-        # show the images
-        output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-        images.append(output)
-        titles.append(title + ", angle: " + str(angle))
-        masks.append(mask)
+            cv2.circle(thresh_img, center, 5, (255, 255, 255), -1)
+            # show the images
+            output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
+            images.append(output)
+            titles.append(title + ", angle: " + str(angle))
+            masks.append(mask)
+        except:
+            print(title, " not found.")
 
     cv2.line(thresh_img,(center[0]-200,center[1]),center,(255,255,255), 2)    
 
@@ -346,34 +327,22 @@ def find_angles_with_display(threshImg,center):
     print("time: ",time.time() - start)
     print(angles)
     show_images(images, cols = 3, titles = titles)
-    return angles
-def find_angles_and_get_result(threshImg,center):
+    return angles,light_position
+
+def find_angles_and_get_result(threshImg,center,boundaries):
     start = time.time()
-    threshImg = cv2.resize(threshImg, (0,0), fx=0.5, fy=0.5)
     #threshImg = cv2.cvtColor(threshImg, cv2.COLOR_BGR2HSV)
 
     threshImg  = cv2.flip( threshImg, 0 )
     thresh_img = threshImg.copy()
-    # define the list of boundaries
-    '''boundaries = [
-         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
-         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
-         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
-         ([0, 178, 0], [255, 181, 232], 'g', (0,255,0))
-    ]'''
-
-    boundaries = [
-         ([0, 0, 162], [255, 0, 255], 'r', (0,0,255)),
-         ([0, 37, 51], [255, 255, 60], 'y', (0,255,255)),
-         ([255, 0, 0], [255, 0, 255], 'b', (255,0,0)),
-         ([0, 181, 0], [255, 183, 42], 'g', (0,255,0))
-    ]
+    
     masks = []
     images = []
     titles = []
     angles = []
+    lights_positions = []
     # loop over the boundaries
-    for (lower, upper, title, color) in boundaries:
+    for (lower, upper, title, color, pos) in boundaries:
         # create NumPy arrays from the boundaries
         lower = np.array(lower, dtype = "uint8")
         upper = np.array(upper, dtype = "uint8")
@@ -411,6 +380,7 @@ def find_angles_and_get_result(threshImg,center):
             if cY < center[1]:
                 angle = - angle
             angles.append(angle)
+            lights_positions.append(pos)
             cv2.line(thresh_img,(cX ,cY),center,color, 2)    
 
             cv2.circle(thresh_img, center, 5, (255, 255, 255), -1)
@@ -421,14 +391,13 @@ def find_angles_and_get_result(threshImg,center):
             masks.append(mask)
         except:
             print(title,"not found")
-
     cv2.line(thresh_img,(center[0]-200,center[1]),center,(255,255,255), 2)    
 
     thresh_img = cv2.cvtColor(thresh_img, cv2.COLOR_BGR2RGB)
     images.append(thresh_img)
     titles.append('Original')
     i = 0
-    return thresh_img,angles
+    return thresh_img,angles,lights_positions
 def find_robot_pos(angles,lights_coordinates):
     a1,a2,a3 = math.radians(angles[0]),math.radians(angles[1]),math.radians(angles[2])
     x1,y1 = lights_coordinates[0]
@@ -440,8 +409,8 @@ def find_robot_pos(angles,lights_coordinates):
     x3_ = x3-x2
     y3_ = y3-y2
 
-    T12 = 1/math.tan(a2-a1)
-    T23 = 1/math.tan(a3-a2)
+    T12 = 1/math.tan(a2+0.0001-a1)
+    T23 = 1/math.tan(a3+0.0001-a2)
     T31 = (1-T12*T23)/(T12+T23)
 
     x12_ = x1_ + T12*y1_
@@ -460,5 +429,6 @@ def find_robot_pos(angles,lights_coordinates):
     
     angle = math.atan2(y2 - y , x2 - x)  - a2
     
-    
+    if (x < 3000 and y > 5000) or x < 10 or y < 10 or x > 7990 or y > 7990:
+        print(colored('Return robot pos from STM', 'yellow'))
     return x,y,math.degrees(angle)
