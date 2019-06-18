@@ -19,4 +19,27 @@ You can find them under **bottle_recognition** folder and **beacon** folder.
 
 For the bottle recognition part, I tried several techniques such as the Python lib ImageAI, OpenCV filtering and ML approaches with an Haar Cascade. You can find it in the Jupyter notebook called **main** under the **bottle_recognition** folder.
 
+Some results for the visual recognition part:
 
+![](bottle_recognition/results/hard_test.png)
+
+
+
+![](bottle_recognition/results/blur_img.PNG)
+
+
+![](bottle_recognition/results/position_bottle2.PNG)
+
+
+![](bottle_recognition/results/position_bottle4_b.PNG)
+
+
+Set up of the homemade beacon on the robot:
+
+![](beacon/images/20190611_163429.jpg)
+
+
+![](beacon/images/beacon_zoom.PNG)
+
+
+![](beacon/images/beacon_header_analysed.png)
