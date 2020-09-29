@@ -1,12 +1,6 @@
-# LINKS:
+# Visual recognition
 
-Github: https://github.com/Apiquet/Visual_recognition
-
-My website: 
-
-Bottle recognition: https://anthonypiquet.wordpress.com/2019/06/02/visual-recognition/
-
-Beacon: https://anthonypiquet.wordpress.com/2019/06/13/beacon/
+Project: https://apiquet.com/2019/06/02/visual-recognition/
 
 # DESCRIPTION:
 
